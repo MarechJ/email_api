@@ -1,0 +1,11 @@
+.tox/
+#*
+.#*
+*~
+build/
+dist/
+*.txt
+*.pyc
+py34/
+*.cache/
+*.egg*
