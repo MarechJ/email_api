@@ -4,7 +4,11 @@ setup(
     version = '0.1',
     packages = find_packages(),
 
-    install_requires = ['bottle>=0.12.9', 'email-validator>=1.0.0'],
+    install_requires = [
+        'bottle>=0.12.9',
+        'email-validator>=1.0.0',
+        'requests>=2.9.1'
+    ],
 
     package_data = {
         # If any package contains *.txt or *.rst files, include them:

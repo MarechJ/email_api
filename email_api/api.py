@@ -11,9 +11,18 @@ from email_api.message import (
     build_email,
     build_recipients
 )
-
+from email_api.providers_manager import ProvidersManager
+from email_api.sendgrid_provider import SendgridProvider
+from email_api.mailgun_provider import MailgunProvider
 
 _LOG = logging.getLogger()
+
+# This could be done more dynamically, from config
+# with dynamic imports
+REGISTERED_PROVIDERS = [
+    SendgridProvider,
+    MailgunProvider
+]
 
 
 @route('/email', method='post')
@@ -24,22 +33,26 @@ def send_email():
     """
     params = request.json or request.params
 
-    to = params.get('to', None)
+    recps = {
+        'to': params.get('to', None),
+        'cc': params.get('cc', None),
+        'bcc': params.get('bcc', None)
+    }
     subject = params.get('subject', None)
     body = params.get('body', None)
 
-    print(to, subject, body)
+    print(recps, subject, body)
     try:
-        if not isinstance(to, list):
-            to = [to]
-        recipients = build_recipients(to)
-        build_email(recipients, subject, body)
+        recipients = build_recipients(recps)
+        email = build_email(recipients, subject, body)
+        manager = ProvidersManager(REGISTERED_PROVIDERS)
+        sent = manager.send(email)
 
     except (InvalidRecipientError, InvalidEmailError) as e:
         _LOG.warning("%s", e)
         abort(400, e)
 
-    return 'ok'
+    return {"sent": sent}
 
 
 if __name__ == '__main__':

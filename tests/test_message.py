@@ -23,22 +23,39 @@ class TestRecipient(unittest.TestCase):
             'foo bar',
             None
         ]
+        self.bad_types = [
+            'abcd',
+            None,
+            ''
+        ]
+        self.types = ['to', 'from', 'cc', 'bcc']
+
 
     def test_bad_email_recipient(self):
         for e in self.bad_emails:
-            r = Recipient(e, None)
+            r = Recipient(e, None, self.types[0])
             self.assertRaises(InvalidRecipientError, r.validate)
 
     def test_valid_email_recipient(self):
         for e in self.valid_emails:
-            r = Recipient(e, None)
+            r = Recipient(e, None, self.types[0])
             self.assertEqual(r.email, e)
             self.assertEqual(r.validate(), True)
+
+    def test_types(self):
+        for t in self.types:
+            r = Recipient(self.valid_emails[0], None, t)
+            r.validate()
+
+    def test_bad_types(self):
+        for t in self.bad_types:
+            r = Recipient(self.valid_emails[0], None, t)
+            self.assertRaises(InvalidRecipientError, r.validate)
 
     def test_smoke(self):
         for e in self.valid_emails:
             for n in self.display_names:
-                r = Recipient(e, n)
+                r = Recipient(e, n, self.types[0])
                 self.assertEqual([r.email, r.display_name], [e, n])
 
 
@@ -53,7 +70,7 @@ class TestEmail(unittest.TestCase):
             'blah'
         ]
         self.recipients = [
-            Recipient('me@blah.com', 'My Name')
+            Recipient('me@blah.com', 'My Name', 'to')
         ]
         self.bad_subject = [
             'a' * 90
@@ -73,9 +90,9 @@ class TestEmail(unittest.TestCase):
 
     def test_default_subject(self):
         email = self.get_new_mail()
-        email.set_subject('')
+        email.subject = ''
         self.assertEqual(email.subject, Email.default_subject)
-        email.set_subject(None)
+        email.subject = None
         self.assertEqual(email.subject, Email.default_subject)
 
     def test_bad_recipient_type(self):
@@ -93,7 +110,7 @@ class TestEmail(unittest.TestCase):
         for subj in self.bad_subject:
             email = self.get_new_mail()
             email.add_recipients(self.recipients)
-            email.set_subject(subj)
+            email.subject = subj
             self.assertRaises(InvalidEmailError, email.validate)
 
     def test_smoke_email(self):
@@ -101,9 +118,7 @@ class TestEmail(unittest.TestCase):
         email.add_recipient(self.recipients[0])
         for s in self.subject:
             for b in self.bodies:
-                email.set_subject(s)
-                email.set_body(b)
-                if not b:
-                    b = email.default_body
+                email.subject = s
+                email.body = b
                 self.assertEqual([email.subject, email.body], [s, b])
                 self.assertEqual(email.validate(), True)
