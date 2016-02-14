@@ -9,10 +9,12 @@ from email_api.abstract_provider import (
 
 
 class SendgridProvider(AProvider):
+    nickname = 'sendgrid'
 
     @property
     def send_url(self):
-        return (
+        return ( # This could be seeded from the conf But if they
+            # change their API we might aswell revisit this class..
             HttpMethod.post,
             'https://api.sendgrid.com/api/mail.send.json'
         )
@@ -27,10 +29,8 @@ class SendgridProvider(AProvider):
 
         """
         mail = dict(
-            api_user="api_client",
-            # We might not want to leave that in Move to config file
-            # But let's stick to 0 config app for now
-            api_key="",
+            api_user=self._user,
+            api_key=self._key,
             **email.to_dict(),
         )
 

@@ -1,5 +1,12 @@
 """The module containing the Manager that handles the different
-providers
+providers.
+
+Its role is:
+- To construct providers while catching potential errors,
+one by one until it succeeds
+- To Collect all information from the
+provider
+- To do the actual I/O by sending http requests
 
 """
 
@@ -26,18 +33,25 @@ class ProvidersManager:
 
     """
 
-    def __init__(self, provider_classes):
+    def __init__(self, provider_classes, config):
         """
+        Note:
+
+        We take Classes as argument and not instances because we might
+        need more control over how it's built later, also we'd need to
+        instanciate them all beforehand which is more costly than
+        creating it only if we need.
 
         Args:
           provider_classes (list): List of AProvider sub-class (not instances)
 
         """
+        self.config = config
         self.provider_classes = provider_classes
 
 
     @staticmethod
-    def _create_provider(provider_class):
+    def _create_provider(provider_class, config):
         """ Instanciate and validate the provider
 
         Raises:
@@ -46,7 +60,11 @@ class ProvidersManager:
         Returns:
           AProvider
         """
-        provider = provider_class()
+        try:
+            provider = provider_class(config)
+        except TypeError:
+            raise InvalidProviderError("Provider must sub-class AProvider")
+
         if not isinstance(provider, AProvider):
             raise InvalidProviderError("Provider must sub-class AProvider")
 
@@ -81,9 +99,8 @@ class ProvidersManager:
 
         return format_, mail_dict
 
-    @staticmethod
-    def _prep_request(email, provider_klass, request_func):
-        """* Pure function *
+    def _prep_request(self, email, provider_klass, request_func):
+        """ *Pure function*
         Easier for testing, we prepare the request function and return the
         callable, no I/O.  Also serves as depency injection, in case
         we want to ditch/wrap the requests library later
@@ -104,7 +121,7 @@ class ProvidersManager:
           InvalidProviderError
 
         """
-        provider = ProvidersManager._create_provider(provider_klass)
+        provider = self._create_provider(provider_klass, self.config)
         format_, http_data = ProvidersManager._get_serialized_data(
             provider, email
         )
@@ -164,12 +181,13 @@ class ProvidersManager:
                     continue
                 except (requests.Timeout, requests.TooManyRedirects,
                         requests.ConnectionError) as e:
-                    # ConnectionError could mean that we don't have a
-                    # network connection. Some more actions could be
-                    # taken here
                     _LOG.warning(e)
                     continue
 
-
         # if we exit the loop it means no provider successfully worked
         return False
+
+    def handle_callback(self, name, data):
+        # Implement webhook callback.
+        # Dispatch to providers here and return structured data
+        pass

@@ -10,10 +10,12 @@ from email_api.abstract_provider import (
 
 
 class MailgunProvider(AProvider):
+    nickname = "mailgun"
 
     @property
     def send_url(self):
-        return (
+        return (# This could be seeded from the conf But if they
+            # change their API we might aswell revisit this class..
             HttpMethod.post,
             'https://api.mailgun.net/v3/\
             sandbox411449faf6304f7db8a5f923277e2437.mailgun.org/messages'
@@ -21,7 +23,7 @@ class MailgunProvider(AProvider):
 
     @property
     def auth(self):
-        return "api", "" # add key
+        return self._user, self._key
 
     def email_to_data(self, email):
         """ Mailgun is quite permissive and does not care about null fields
@@ -36,6 +38,9 @@ class MailgunProvider(AProvider):
         for recp in email.get_recipients():
             mail.setdefault(recp.type_, []).append(str(recp))
 
+        # Remap replyto
+        mail['h:Reply-To'] = mail['replyto']
+        del mail['replyto'] # Mailgun actually ignores this key otherwise
         mail['from'] = str(email.from_)
 
         return DataFormat.form, mail

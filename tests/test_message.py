@@ -1,6 +1,13 @@
 import unittest
 
-from email_api.message import Email, Recipient, InvalidEmailError, InvalidRecipientError
+from email_api.message import (
+    Email,
+    Recipient,
+    InvalidEmailError,
+    InvalidRecipientError,
+    build_email,
+    build_recipients
+)
 
 
 class TestRecipient(unittest.TestCase):
@@ -122,3 +129,34 @@ class TestEmail(unittest.TestCase):
                 email.body = b
                 self.assertEqual([email.subject, email.body], [s, b])
                 self.assertEqual(email.validate(), True)
+
+
+class TestUtilsFuncs(unittest.TestCase):
+
+    def test_smoke_build_email(self):
+        recps = [Recipient.from_string('j@j.fr', 'to')],
+        invalid_mail = "asdasda"
+
+        self.assertRaises( # Invalid recipient
+            InvalidRecipientError,
+            build_email,
+            [object()],
+            None,
+            None
+        )
+        self.assertRaises( # Invalid replyto
+            InvalidRecipientError,
+            build_email,
+            recps,
+            None,
+            None,
+            replyto=invalid_mail
+        )
+        self.assertRaises( # Invalid from
+            InvalidRecipientError,
+            build_email,
+            recps,
+            None,
+            None,
+            from_=invalid_mail
+        )

@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 import requests
 
@@ -15,8 +16,9 @@ from email_api.message import Email
 
 class fake_request_func:
     """Could use Mock assert_called_with.
-    But I usually prefer to avoid Mock if I
-    can and only use it for side effects related things (I/O, excpetions...)
+
+    But I usually prefer to avoid Mock it if I can and only use it for
+    side effects related things (I/O, excpetions...)
 
     """
     def __init__(self, method, url, auth=None,
@@ -34,7 +36,7 @@ class InvalidProvider:
 
 def klass(instance):
     "fake class constructor"
-    def f():
+    def f(*args, **kwargs):
         return instance
     return f
 
@@ -43,10 +45,12 @@ class FakeProvider(AProvider):
     def __init__(self,
                  auth=('user', 'pw'),
                  send_url=(HttpMethod.post, 'http://google.fr'),
-                 email_data=(DataFormat.form, Email().to_dict())):
+                 email_data=(DataFormat.form, Email().to_dict()),
+                 raises=None):
         self._auth = auth
         self._send_url = send_url
         self._email_data = email_data
+        self._raises = raises
 
     @property
     def auth(self):
@@ -57,6 +61,8 @@ class FakeProvider(AProvider):
         return self._send_url
 
     def email_to_data(self, email):
+        if self._raises:
+            raise self._raises
         return self._email_data
 
     def __str__(self):
@@ -73,34 +79,61 @@ class TestProvidersManager(unittest.TestCase):
         self.bad_providers = [
             FakeProvider(auth=''), # bad auth
             FakeProvider(auth=('user',)), # bad auth
-            #FakeProvider(send_url=(HttpMethod.get, 'google.fr')), # bad url
             FakeProvider(send_url=('x', 'http://google.fr')), # bad method
             FakeProvider(send_url=('http://google.fr', )), # bad url tuple
             FakeProvider(email_data=('blah', {})), # bad data format
             FakeProvider(email_data=('blah',)), # bad data tuple
-            #FakeProvider(email_data=(DataFormat.query, {})) # empty dict
         ]
+
+    def _get_manager(self, provider=None, config=None):
+        return ProvidersManager(provider, config)
 
     def test_bad_providers(self):
         self.assertRaises(
             InvalidProviderError,
             ProvidersManager._create_provider,
-            InvalidProvider
+            InvalidProvider,
+            {}
         )
         for p in self.bad_providers:
-            print(p)
             self.assertRaises(
                 InvalidProviderError,
-                ProvidersManager._prep_request,
+                self._get_manager()._prep_request,
                 Email(),
                 klass(p),
                 fake_request_func
             )
 
     def test_smoke(self):
-        req = ProvidersManager._prep_request(
-            Email(), FakeProvider, fake_request_func
+        req = self._get_manager()._prep_request(
+            Email(), klass(FakeProvider()), fake_request_func
         )
         req = req()
-        #self.assertEquals([], [req.auth])
-        #with mock.patch('email_api.providers_manager'
+        prov = FakeProvider()
+        method, url = prov._send_url
+        # Check if the request paramters match those of the provider
+        self.assertEqual([req.method, req.url], [method.value, url])
+        self.assertEqual(req.auth, prov.auth)
+        format_, data = prov._email_data
+        self.assertEqual(getattr(req, format_.value), data)
+
+    def test_fallack(self):
+        exceptions = [
+            requests.HTTPError,
+            requests.Timeout,
+            requests.TooManyRedirects,
+            requests.ConnectionError,
+            requests.exceptions.MissingSchema,
+            InvalidProviderError
+        ]
+
+        with mock.patch( # Stop I/O
+            'email_api.providers_manager.requests.session',
+            auto_spec=True
+        ):
+            for excp in exceptions:
+                providers = [klass(FakeProvider(raises=excp))] * 2
+                mng = self._get_manager(providers)
+                assert mng.send(Email()) == False
+                mng = self._get_manager(providers + [klass(self.good)])
+                assert mng.send(Email()) == True

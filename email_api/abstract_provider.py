@@ -1,5 +1,12 @@
 """This module contains everything related to providers.
 Third party provider API implementation/definition must use the below.
+
+The role of AProvider subclasses is just to take in core data struct,
+shape and massage it to fit the specific API formats.
+
+It should not do any IOs or fancy side effects, the Manager takes care
+of that.
+
 """
 
 from enum import Enum
@@ -39,8 +46,32 @@ class HttpMethod(Enum):
 class AProvider(ABC):
     """Third party provider must implement this abstract class
 
-    Return types are not validate in anyway
+    Proper return types for subclasses are (to be) validated in the unit test
+
+    `self._user` and `self._key` should be used in the subclass for auth.
+    `config` is saved under self._config if need be
     """
+
+    nickname = None
+    """The name to be used for this provider in the configuration, and
+    for the webhooks mapping.
+
+    Subclasses should have their own
+    """
+    def __init__(self, config=None):
+        self._user = ''
+        self._key = ''
+        self._config = config
+
+        if not self.nickname:
+            raise InvalidProviderError("Provider must define a nickname")
+        if not config:
+            return
+
+        conf = config.get(self.nickname)
+        self._user = conf.get('user', self._user)
+        self._key = conf.get('key', self._key)
+
 
     @abstractproperty
     def auth(self):
@@ -74,13 +105,13 @@ class AProvider(ABC):
         `email_api.message.Recipient` and adapt it to its need.
 
         Files are currently not implemented in email_api.message but
-        they should also be wrap in a class such as Attachment
+        they should also be wrapped in a class such as Attachment
 
-        Return of tuple with the `email_api.provider.DataFormat` to
-        user and the email as a dict
+        Returns of tuple with the `email_api.provider.DataFormat` to
+        use and the email as a dict
 
         Args:
-          email (email_api.message.Email): The email to be serialize
+          email (email_api.message.Email): The email to be serialized
             to API specific format
 
         Returns:
@@ -94,7 +125,7 @@ class AProvider(ABC):
         properly, not to have random ValueError when unpacking values.
 
         Note: You must call it explicitly. We don't check that the url
-        is valid, we delegate to the lib # sending the requests
+        is valid, we delegate to the lib  sending the requests
 
         Raises:
           InvalidProviderError

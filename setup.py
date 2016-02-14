@@ -2,12 +2,14 @@ from setuptools import setup, find_packages
 setup(
     name = 'email_api',
     version = '0.1',
-    packages = find_packages(),
+    packages = find_packages(exclude=['tests']),
 
     install_requires = [
         'bottle>=0.12.9',
         'email-validator>=1.0.0',
-        'requests>=2.9.1'
+        'requests>=2.9.1',
+        'PyYAML>=3.11',
+        'simple-crypt>=4.1.7'
     ],
 
     package_data = {
