@@ -31,7 +31,7 @@ class SendgridProvider(AProvider):
         mail = dict(
             api_user=self._user,
             api_key=self._key,
-            **email.to_dict(),
+            **email.to_dict()
         )
 
         for type_ in ['to', 'cc', 'bcc']:
