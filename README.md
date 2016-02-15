@@ -53,6 +53,8 @@ Usage
 
 From the root of the repo, or after installing with:
 ```
+mkvirtualenv test_api -p python3 --no-site-packages
+workon test_api
 python setup.py install
 ```
 Run:
