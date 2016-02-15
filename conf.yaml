@@ -4,8 +4,8 @@ port: 8080
 # You cam put fake value here but not email will be sent
 providers:
   sendgrid:
-    user: # add you user
-    key: # add you key
+    user: # add your user
+    key: # add your key
   mailgun:
     user: # add user
     key: # add key
