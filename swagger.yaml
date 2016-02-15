@@ -1,0 +1,97 @@
+---
+swagger: "2.0"
+info:
+  description: "Send your emails easily"
+  version: "1.0.0"
+  title: "Email API"
+host: "email.marech.fr"
+basePath: "/"
+schemes:
+- "http"
+produces:
+- "application/json"
+paths:
+  /email:
+    post:
+      tags:
+      - "send"
+      summary: "Send an email"
+      description: "The Email endpoint allows you to send an email through our backend\
+        \ providers,\ntransparently. It is quite permissive and only requires a main\
+        \ recipient (To).\nHTML email and attachment are not supported at the moment.\
+        \ \nYou can use query parameters, form data or JSON.\n\nAll email addresses\
+        \ should follow the standards:\n  - `\"email@address.com\"`\n  - `\"Displayname\
+        \ <ac@b.com>\"`\n  - `\"display name name <ac@b.com>\"`\n  \nAll `array` parameters\
+        \ can also be just a string of one email\n\n"
+      operationId: "emailPOST"
+      parameters:
+      - name: "to"
+        in: "query"
+        description: "The `to:` recipients"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+      - name: "cc"
+        in: "query"
+        description: "The `cc:` recipients"
+        required: false
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+      - name: "bcc"
+        in: "query"
+        description: "The `cc:` recipients"
+        required: false
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+      - name: "from"
+        in: "query"
+        description: "From whom the email is sent. Defaults to our hostname"
+        required: false
+        type: "string"
+        format: "email standard"
+      - name: "reply_to"
+        in: "query"
+        description: "Override the `from` for replies"
+        required: false
+        type: "string"
+        format: "email only"
+      - name: "subject"
+        in: "query"
+        description: "The subject. Default to (no subject)"
+        required: false
+        type: "string"
+        format: "plain/text"
+      - name: "body"
+        in: "query"
+        description: "The text content of the email"
+        required: false
+        type: "string"
+        format: "plain/text"
+      responses:
+        200:
+          description: "An array of products"
+          schema:
+            $ref: "#/definitions/Email"
+        400:
+          description: "Invalid email (no main recipient) or invalid email address(es)"
+          schema:
+            $ref: "#/definitions/Error"
+      x-swagger-router-controller: "Send"
+definitions:
+  Email:
+    type: "object"
+    properties:
+      sent:
+        type: "boolean"
+        description: "If True it means one of our backend provider accepted the email."
+  Error:
+    type: "object"
+    properties:
+      error-message:
+        type: "string"
