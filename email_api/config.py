@@ -67,21 +67,25 @@ def load_config(path):
 
     enc_key = getpass("Passphrase: ") # I/O prompt for passphrase
     # Below we loop thourgh the providers config and decrypt the api keys
+    # It's kind of an hack so that we can push a 0 config app to github
     for _, prov_data in DEFAULT_CONF[PROVIDERS_KEY].items():
         for k, v in prov_data.items():
             if k == 'key':
                 try:
-                    prov_data[k] = decrypt(enc_key, v)
-                except DecryptionException:
+                    clear = decrypt(enc_key, v)
+                    if clear == prov_data[k]:
+                        raise DecryptionException
+                    prov_data[k] = clear.decode('utf-8')
+                except (DecryptionException, UnicodeDecodeError) as e:
                     _LOG.critical(
-                        "Invalid password. Can't decrypt api keys"
+                        "Invalid password. Can't decrypt api keys. %s", e
                     )
                     _LOG.info(
                         "You can provide your own by adding a config file"
                     )
                     exit(1)
 
-        return DEFAULT_CONF
+    return DEFAULT_CONF
 
 def valid_config_or_exit(config, providers):
     _exit_if_no_providers(config)
