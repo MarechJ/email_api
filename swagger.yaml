@@ -43,7 +43,7 @@ paths:
         collectionFormat: "multi"
       - name: "bcc"
         in: "query"
-        description: "The `cc:` recipients"
+        description: "The `bcc:` recipients"
         required: false
         type: "array"
         items:
