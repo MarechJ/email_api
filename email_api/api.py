@@ -9,8 +9,8 @@ an ID and status
 - Provide GET endpoint to fetch by ID, or ALL with pagination
 
 - Provide a POST /hook/<providername> endpoint (for status update)
-that use the ProvidersManager to handle API specific data and
-standardize it then update Email records status
+that uses the ProvidersManager to handle API specific data and
+standardize it, then update Email records status
 
 - Add rate limiting or auth, or both
 
@@ -63,7 +63,7 @@ def error400(err):
 
 @route('/email', method='post')
 def send_email():
-    """ Validate and send an email.
+    """ Validates and send an email.
 
     Accepts JSON or url encoded parameters.
 
@@ -109,7 +109,7 @@ def start_app(argv):
     _app = default_app()
     _app.config.update(config)
 
-    # TODO: Configure logger
+    # TODO: Configure logger, WSGI server conf
     run(app=_app,
         host=config.get('host', 'localhost'),
         port=config.get('port', 8080))

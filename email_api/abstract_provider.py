@@ -61,7 +61,7 @@ class AProvider(ABC):
     def __init__(self, config=None):
         """
         Args:
-            config (Optionnal[dict]): Application config, should contain
+            config (Optional[dict]): Application config, should contain
               api username and key/password
         """
         self._user = ''
