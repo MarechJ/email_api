@@ -1,4 +1,4 @@
-"""Concrete Provider for mailgun.
+"""Concrete Provider implementation for mailgun.
 
 https://documentation.mailgun.com/user_manual.html
 """
@@ -14,8 +14,7 @@ class MailgunProvider(AProvider):
 
     @property
     def send_url(self):
-        return (# This could be seeded from the conf But if they
-            # change their API we might aswell revisit this class..
+        return (  # This should be seeded from the conf.
             HttpMethod.post,
             'https://api.mailgun.net/v3/\
             sandbox411449faf6304f7db8a5f923277e2437.mailgun.org/messages'
@@ -26,8 +25,19 @@ class MailgunProvider(AProvider):
         return self._user, self._key
 
     def email_to_data(self, email):
-        """ Mailgun is quite permissive and does not care about null fields
-        So we don't do any filtering
+        """Converts an `Email` to a `dict` of parameters specific to mailgun
+
+        Mailgun is quite permissive and does not care about null fields
+        So we don't do any filtering.
+
+        Args:
+          email (class:Email): An Email instance
+
+        Returns:
+          tuple::
+
+            (Dataformat.form, dict)
+
         """
         mail = dict(
             **email.to_dict()
@@ -39,8 +49,7 @@ class MailgunProvider(AProvider):
             mail.setdefault(recp.type_, []).append(str(recp))
 
         # Remap replyto
-        mail['h:Reply-To'] = mail['replyto']
-        del mail['replyto'] # Mailgun actually ignores this key otherwise
+        mail['h:Reply-To'] = mail.get('replyto')
         mail['from'] = str(email.from_)
 
         return DataFormat.form, mail

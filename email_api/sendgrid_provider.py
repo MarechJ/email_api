@@ -1,5 +1,6 @@
-"""Concrete provider implementation
+"""Concrete provider implementation for sendgrid
 
+https://sendgrid.com/docs
 """
 from email_api.abstract_provider import (
     AProvider,
@@ -13,8 +14,7 @@ class SendgridProvider(AProvider):
 
     @property
     def send_url(self):
-        return ( # This could be seeded from the conf But if they
-            # change their API we might aswell revisit this class..
+        return (  # Should come from conf
             HttpMethod.post,
             'https://api.sendgrid.com/api/mail.send.json'
         )
@@ -24,8 +24,18 @@ class SendgridProvider(AProvider):
         return None
 
     def email_to_data(self, email):
-        """Sendgrid is quite permissive and does not care about null fields
-        so we don't filter
+        """onverts an `Email` to a `dict` of parameters specific to sendgrid
+
+        Sendgrid is quite permissive and does not care about null fields
+        so we don't filter.
+
+        Args:
+          email (class:Email): An Email instance
+
+        Returns:
+          tuple::
+
+            (Dataformat.form, dict)
 
         """
         mail = dict(

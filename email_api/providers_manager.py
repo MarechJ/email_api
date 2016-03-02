@@ -2,11 +2,10 @@
 providers.
 
 Its role is:
-- To construct providers while catching potential errors,
-one by one until it succeeds
-- To Collect all information from the
-provider
+- To construct provider(s) while catching potential errors
+- To Collect all information from the provider
 - To do the actual I/O by sending http requests
+- To Loop through providers until we successfully send an email
 
 """
 
@@ -26,39 +25,44 @@ _LOG = logging.getLogger()
 
 
 class ProvidersManager:
-    """This class does the actual I/O
+    """Handles the different providers and exposes a facade to send
+    an email easily.
 
-    It handles the different providers and provides a facade to send
-    emails easily
+    This class does the actual I/O.
 
     """
 
     def __init__(self, provider_classes, config):
         """
         Note:
-
-        We take Classes as argument and not instances because we might
-        need more control over how it's built later, also we'd need to
-        instanciate them all beforehand which is more costly than
-        creating it only if we need.
+           We take Classes as argument and not instances because we might
+           need more control over how its built later, also we'd need to
+           instanciate them all beforehand which is more costly than
+           creating it only if we need.
 
         Args:
-          provider_classes (list): List of AProvider sub-class (not instances)
+          provider_classes (list[AProvider]): List of
+            `email_api.abstract_provider.AProvider` subclasses (!= objects)
+          config (dict): Configuration that will be passed to providers
 
         """
         self.config = config
         self.provider_classes = provider_classes
 
-
     @staticmethod
     def _create_provider(provider_class, config):
-        """ Instanciate and validate the provider
+        """ Instanciate and validate the provider.
+
+        Args:
+            provider_class (class:AProvider): An AProvider subclass
 
         Raises:
-          InvalidProviderError
+            InvalidProviderError: If provider_class is not:
+              - Inheriting `AProvider`
+              - Successfully passing `AProvider` validation
 
         Returns:
-          AProvider
+            AProvider: An AProvider speciliazation instance
         """
         try:
             provider = provider_class(config)
@@ -73,14 +77,19 @@ class ProvidersManager:
 
     @staticmethod
     def _get_serialized_data(provider, email):
-        """ Get the serialize data that need to be sent to the provider API
-        Makes sure the types are valid
+        """Get the serialized email data that needs to be sent to the provider
+        API and returns it.
+
+        Makes sure the types are valid.
 
         Raises:
-          InvalidProviderError
+          InvalidProviderError: If the provider instance returned bad data
+            formats
 
         Returns:
-          tuple: DataFormat, dict
+          tuple::
+
+            (DataFormat, dict)
 
         """
         try:
@@ -100,22 +109,25 @@ class ProvidersManager:
         return format_, mail_dict
 
     def _prep_request(self, email, provider_klass, request_func):
-        """ *Pure function*
-        Easier for testing, we prepare the request function and return the
-        callable, no I/O.  Also serves as depency injection, in case
-        we want to ditch/wrap the requests library later
+        """Prepare the request call by putting all the pieces together, and
+        returns a (callable).
+
+
+        This is a pure function (no I/O) which makes it easier to
+        test.  Also serves as depency injection, in case we want to
+        ditch/wrap the `requests` library later.
 
         Args:
-          email (email_api.message.Email):
-          provider_klass (AProvider): Class (to be instancianted)
+          email (class:Email):
+          provider_klass (class:AProvider): Class (to be instancianted)
+          request_func (callable): A function pointer with the
+             following signature::
 
-          request_func (function): A function pointer with the
-             following signature:
-             func(auth:tuple, method:str, url:str, json:dict,
-                  data:dict, query:dict)
+               func(auth:tuple, method:str, url:str, json:dict,
+                    data:dict, query:dict)
 
         Returns:
-          callable function
+          callable: The request function with all the required parameters
 
         Raises:
           InvalidProviderError
@@ -128,44 +140,45 @@ class ProvidersManager:
         method, url = provider.send_url
         auth = provider.auth
         # Build http request
-        if auth: # Add HTTP auth if provider needs it
+        if auth:  # Add HTTP auth if provider needs it
             request_func = partial(request_func, auth=auth)
 
         return partial(
             request_func,
             method=method.value,
             url=url,
-            # data=http_data or json=.. or params=..
+            # Below is: data=http_data or json=.. or params=..
             **{format_.value: http_data}
         )
 
-
-
     def send(self, email):
-        """Iterate on provider, gathering necessary data and catching
-        potential errors.
+        """Send an email.
 
+        Iterates on provider classes, contructing instances, gathering
+        necessary data and catching potential errors.
         The loop stops as soon as we have sucessful call.
 
         Args:
 
-          email (email_api.message.Email): The email structure to be
-             sent
+          email (class:Email): The email structure to be
+            sent
 
         Returns:
           bool: True if email was successfully sent
+
         """
         with requests.session() as sess:
             for klass in self.provider_classes:
                 try:
-                    # Get the data from the provider
+                    # Prepare the request using the current provider
                     req = self._prep_request(email, klass, sess.request)
                     response = req()
-                    response.raise_for_status() # We only care about 2XX
+                    response.raise_for_status()  # We only care about 2XX
 
                     # Reponse data is useless as it greatly varies
                     # from one provider to another.
                     # E.g sendgrid just replies: 'success'
+                    # To keep track of email statuses webhooks need to be setup
                     return True
 
                 except (InvalidProviderError,
@@ -176,7 +189,8 @@ class ProvidersManager:
                     )
                     continue
                 except requests.HTTPError as e:
-                    # If 4XX most likely because of unsanitized data
+                    # If 4XX most likely because of unsanitized or bad
+                    # data format
                     _LOG.warning(e)
                     continue
                 except (requests.Timeout, requests.TooManyRedirects,
@@ -188,6 +202,6 @@ class ProvidersManager:
         return False
 
     def handle_callback(self, name, data):
-        # Implement webhook callback.
+        # Implement webhook callbacks here.
         # Dispatch to providers here and return structured data
         pass
