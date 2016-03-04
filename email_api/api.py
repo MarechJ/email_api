@@ -1,4 +1,6 @@
-"""Web framework controller/routes
+"""Web framework controller/routes.
+Bottle: http://bottlepy.org/docs/dev/index.html
+
 The glue is here.
 
 TODO:

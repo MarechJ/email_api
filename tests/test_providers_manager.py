@@ -13,13 +13,8 @@ from email_api.abstract_provider import (
 from email_api.message import Email
 
 
-
 class fake_request_func:
-    """Could use Mock assert_called_with.
-
-    But I usually prefer to avoid Mock it if I can and only use it for
-    side effects related things (I/O, excpetions...)
-
+    """Note: Could use Mock assert_called_with.
     """
     def __init__(self, method, url, auth=None,
                  json=None, data=None, params=None):
@@ -34,8 +29,9 @@ class fake_request_func:
 class InvalidProvider:
     pass
 
+
 def klass(instance):
-    "fake class constructor"
+    "Fake class constructor"
     def f(*args, **kwargs):
         return instance
     return f
@@ -77,12 +73,12 @@ class TestProvidersManager(unittest.TestCase):
         self.good = FakeProvider()
 
         self.bad_providers = [
-            FakeProvider(auth=''), # bad auth
-            FakeProvider(auth=('user',)), # bad auth
-            FakeProvider(send_url=('x', 'http://google.fr')), # bad method
-            FakeProvider(send_url=('http://google.fr', )), # bad url tuple
-            FakeProvider(email_data=('blah', {})), # bad data format
-            FakeProvider(email_data=('blah',)), # bad data tuple
+            FakeProvider(auth=''),  # bad auth
+            FakeProvider(auth=('user',)),  # bad auth
+            FakeProvider(send_url=('x', 'http://google.fr')),  # bad method
+            FakeProvider(send_url=('http://google.fr', )),  # bad url tuple
+            FakeProvider(email_data=('blah', {})),  # bad data format
+            FakeProvider(email_data=('blah',)),  # bad data tuple
         ]
 
     def _get_manager(self, provider=None, config=None):
@@ -127,13 +123,13 @@ class TestProvidersManager(unittest.TestCase):
             InvalidProviderError
         ]
 
-        with mock.patch( # Stop I/O
+        with mock.patch(  # Stops I/O
             'email_api.providers_manager.requests.session',
             auto_spec=True
         ):
             for excp in exceptions:
                 providers = [klass(FakeProvider(raises=excp))] * 2
                 mng = self._get_manager(providers)
-                assert mng.send(Email()) == False
+                assert not mng.send(Email())
                 mng = self._get_manager(providers + [klass(self.good)])
-                assert mng.send(Email()) == True
+                assert mng.send(Email())

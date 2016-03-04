@@ -5,8 +5,7 @@ from email_api.message import (
     Recipient,
     InvalidEmailError,
     InvalidRecipientError,
-    build_email,
-    build_recipients
+    build_email
 )
 
 
@@ -36,7 +35,6 @@ class TestRecipient(unittest.TestCase):
             ''
         ]
         self.types = ['to', 'from', 'cc', 'bcc']
-
 
     def test_bad_email_recipient(self):
         for e in self.bad_emails:
@@ -137,14 +135,14 @@ class TestUtilsFuncs(unittest.TestCase):
         recps = [Recipient.from_string('j@j.fr', 'to')],
         invalid_mail = "asdasda"
 
-        self.assertRaises( # Invalid recipient
+        self.assertRaises(  # Invalid recipient
             InvalidRecipientError,
             build_email,
             [object()],
             None,
             None
         )
-        self.assertRaises( # Invalid replyto
+        self.assertRaises(  # Invalid replyto
             InvalidRecipientError,
             build_email,
             recps,
@@ -152,7 +150,7 @@ class TestUtilsFuncs(unittest.TestCase):
             None,
             replyto=invalid_mail
         )
-        self.assertRaises( # Invalid from
+        self.assertRaises(  # Invalid from
             InvalidRecipientError,
             build_email,
             recps,

@@ -19,7 +19,7 @@ class TestProviders(unittest.TestCase):
         self.recps = build_recipients({
             'to': "a b <a@b.com>",
             'cc': ["c d <c@d.com>", "g@blah.com", "           h@space.com"],
-            'bcc': "hey <hey@hey.com" # should pass
+            'bcc': "hey <hey@hey.com"  # should pass
         })
         self.from_ = Recipient.from_string("unittest <noreply@unitest", 'from')
 
