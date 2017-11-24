@@ -93,6 +93,7 @@ class ProvidersManager:
 
         """
         try:
+            email = provider.fill_in_blanks(email)
             format_, mail_dict = provider.email_to_data(email)
         except ValueError:
             raise InvalidProviderError(
@@ -179,12 +180,12 @@ class ProvidersManager:
                     # from one provider to another.
                     # E.g sendgrid just replies: 'success'
                     # To keep track of email statuses webhooks need to be setup
-                    return True
+                    return response, klass.nickname
 
                 except (InvalidProviderError,
                         requests.exceptions.MissingSchema):
                     # Failing here means bad coding/config
-                    _LOG.error(
+                    _LOG.exception(
                         "%s is an invalid provider class", klass
                     )
                     continue
@@ -199,7 +200,7 @@ class ProvidersManager:
                     continue
 
         # if we exit the loop it means no provider successfully worked
-        return False
+        return None, None
 
     def handle_callback(self, name, data):
         # Implement webhook callbacks here.

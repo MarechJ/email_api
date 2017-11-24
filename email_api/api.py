@@ -22,6 +22,8 @@ standardize it, then update Email records status
 import logging
 import json
 import sys
+import re
+import os
 
 from bottle import (
     route,
@@ -43,15 +45,21 @@ from email_api.message import (
 from email_api.providers_manager import ProvidersManager
 from email_api.sendgrid_provider import SendgridProvider
 from email_api.mailgun_provider import MailgunProvider
+from email_api.elasticemail_provider import ElasticEmailProvider
 from email_api.config import load_config, valid_config_or_exit, PROVIDERS_KEY
 
 _LOG = logging.getLogger()
 
 # We could load from config
 REGISTERED_PROVIDERS = [
-    SendgridProvider,
-    MailgunProvider
+    #SendgridProvider,
+    MailgunProvider,
+    ElasticEmailProvider
 ]
+
+PROVIDER_BY_NICK = {
+    p.nickname: p for p in REGISTERED_PROVIDERS
+}
 
 
 @error(400)
@@ -61,6 +69,31 @@ def error400(err):
     return json.dumps({
         "error": str(err.body),
     })
+
+
+def _order(nicks):
+    return [PROVIDER_BY_NICK[n] for n in nicks]
+
+
+class UnconfiguredRouteError(Exception):
+    pass
+
+
+def get_route(config, email, routing_type=None):
+    routes = config['routes']
+    if not routing_type:
+        return REGISTERED_PROVIDERS
+
+    joined = ';'.join([rec.email for rec in email.get_recipients('to')])
+
+    for rule in routes[routing_type]:
+        r = re.compile(rule['regex'])
+        res = r.match(joined)
+        if res and res.group(0):
+            print(res, res.group(0))
+            return _order(rule['providers'])
+
+    return _order(routes['default'])
 
 
 @route('/email', method='post')
@@ -73,37 +106,44 @@ def send_email():
     params = request.json or request.params
 
     recps = {
-        'to': params.get('to', None),
-        'cc': params.get('cc', None),
-        'bcc': params.get('bcc', None)
+        'to': params.get('to'),
+        'cc': params.get('cc'),
+        'bcc': params.get('bcc')
     }
-    subject = params.get('subject', None)
-    body = params.get('body', None)
-    from_ = params.get('from', None)
-    reply_to = params.get('reply_to', None)
+    subject = params.get('subject')
+    text = params.get('text')
+    html = params.get('html')
+    from_ = params.get('from')
+    reply_to = params.get('reply_to')
+    route = params.get('route')
 
     try:
         # Init and validate data structures
         recipients = build_recipients(recps)
-        email = build_email(recipients, subject, body, from_, reply_to)
+        email = build_email(recipients, subject, text, html, from_, reply_to)
         # Init Manager with registed providers
+        try:
+            providers = get_route(app().config, email, route)
+            print(providers)
+        except Exception as e: # TODO change this
+            _LOG.exception("Routing error")
+            raise InvalidEmailError
+        #
         manager = ProvidersManager(
-            REGISTERED_PROVIDERS,
+            providers,
             app().config[PROVIDERS_KEY]
         )
-        sent = manager.send(email)
+        res, provider = manager.send(email)
 
     except (InvalidRecipientError, InvalidEmailError) as e:
         _LOG.warning("%s", e)
         abort(400, e)
-
-    return {"sent": sent}
+    print(res.text)
+    return {"sent": bool(res), "provider": provider}
 
 
 def start_app(argv):
-    file_path = None
-    if len(argv) >= 2:
-        file_path = argv[1]
+    file_path = os.getenv('EMAIL_API_CONFIG')
 
     config = load_config(file_path)
     valid_config_or_exit(config, REGISTERED_PROVIDERS)
@@ -114,7 +154,10 @@ def start_app(argv):
     # TODO: Configure logger, WSGI server conf
     run(app=_app,
         host=config.get('host', 'localhost'),
-        port=config.get('port', 8080))
+        port=config.get('port', 8080),
+        server=config.get('server', 'wsgiref'),
+        workers=config.get('workers')
+    )
 
 
 if __name__ == '__main__':

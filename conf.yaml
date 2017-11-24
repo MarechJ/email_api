@@ -1,5 +1,7 @@
 host: localhost
 port: 8080
+engine: gunicorn
+workers: 4
 
 # You cam put fake value here but not email will be sent
 providers:
@@ -7,5 +9,28 @@ providers:
     user: # add your user
     key: # add your key
   mailgun:
-    user: # add user
-    key: # add key
+    user: 'api'
+    key: # add your key
+    domain: 'foo.bar'
+    from_name: noreply
+    human_name: My App Name
+  elasticemail:
+    user: # add your user
+    key:
+    key: # add your key
+    domain: 'bar.foo'
+    from_name: noreply
+    human_name: My App Name
+
+
+# TODO: Add more route types
+routes:
+  default:
+    - elasticemail
+    - mailgun
+    - sendgrid
+  recipients:
+    - regex: '.*@((hotmail)|(outlook)|(live))\..*'
+      providers:
+        - mailgun
+        - elasticemail

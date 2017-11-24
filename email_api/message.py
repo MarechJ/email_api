@@ -124,15 +124,12 @@ class Email:
           files (Optional[Attachment]): not implemented
         """
         self._recipients = []
-        self.from_ = kwargs.get(
-            'from_',
-            Recipient.from_string(Email.default_from, 'from')
-        )
-        self.subject = kwargs.get('subject', None)
-        self.replyto = kwargs.get('replyto', None)
-        self.text = kwargs.get('text', None)
-        self.html = kwargs.get('html', None)
-        self.files = kwargs.get('files', None)
+        self.from_ = kwargs.get('from_')
+        self.subject = kwargs.get('subject')
+        self.replyto = kwargs.get('replyto')
+        self.text = kwargs.get('text')
+        self.html = kwargs.get('html')
+        self.files = kwargs.get('files')
 
     @property
     def from_(self):
@@ -150,6 +147,9 @@ class Email:
           ValueError: If `Recipient.type_` is not 'from'
 
         """
+        if recipient is None:
+            self.__from = None
+            return
         self._check_recipient(recipient)
         if recipient.type_ != 'from':
             raise ValueError("Invalid Recipient.type_ must be 'from'")
@@ -222,9 +222,7 @@ class Email:
             dict
         """
 
-        common_keys = {'replyto', 'text', 'html', 'files'}
-
-        new_dict = {k: v for k, v in self.__dict__.items() if k in common_keys}
+        new_dict = {k: v for k, v in self.__dict__.items()}
         new_dict['subject'] = self.subject
         # Most provider refuse to send an email without a body, but I
         # think it should be allowed
@@ -272,7 +270,7 @@ def build_recipients(recp_dict):
     return recipients
 
 
-def build_email(recipients, subject, body, from_=None, replyto=None):
+def build_email(recipients, subject, text, html, from_=None, replyto=None):
     """ Convenience function to construct an email and validate.
 
     Args:
@@ -296,7 +294,8 @@ def build_email(recipients, subject, body, from_=None, replyto=None):
         raise InvalidRecipientError("Invalid recipent") from e
 
     email.subject = subject
-    email.text = body
+    email.text = text
+    email.html = html
     if from_:
         from_ = Recipient.from_string(from_, 'from')
         from_.validate()

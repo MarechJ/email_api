@@ -16,8 +16,9 @@ class MailgunProvider(AProvider):
     def send_url(self):
         return (  # This should be seeded from the conf.
             HttpMethod.post,
-            'https://api.mailgun.net/v3/\
-            sandbox411449faf6304f7db8a5f923277e2437.mailgun.org/messages'
+            'https://api.mailgun.net/v3/{}/messages'.format(
+                self._config['domain']
+            )
         )
 
     @property
@@ -39,8 +40,9 @@ class MailgunProvider(AProvider):
             (Dataformat.form, dict)
 
         """
+        e = email.to_dict()
         mail = dict(
-            **email.to_dict()
+            **{k: e[k] for k in ['replyto', 'text', 'html', 'files']}
         )
         # Orgnize recipients by type (to,cc,bcc)
         # Store a list of standard email strings such as:

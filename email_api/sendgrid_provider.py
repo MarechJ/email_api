@@ -41,7 +41,8 @@ class SendgridProvider(AProvider):
         mail = dict(
             api_user=self._user,
             api_key=self._key,
-            **email.to_dict()
+            **{k: v for k, v in email.to_dict()
+               if k in ['replyto', 'text', 'html', 'files']}
         )
 
         for type_ in ['to', 'cc', 'bcc']:

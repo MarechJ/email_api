@@ -12,6 +12,7 @@ It should not do any IOs or fancy side effects, the
 
 from enum import Enum
 from abc import ABC, abstractproperty, abstractmethod
+from email_api.message import Recipient, Email
 
 
 class InvalidProviderError(Exception):
@@ -66,7 +67,7 @@ class AProvider(ABC):
         """
         self._user = ''
         self._key = ''
-        self._config = config
+        self._full_config = config
 
         if not self.nickname:
             raise InvalidProviderError("Provider must define a nickname")
@@ -74,6 +75,7 @@ class AProvider(ABC):
             return
 
         conf = config.get(self.nickname)
+        self._config = conf
         self._user = conf.get('user', self._user)
         self._key = conf.get('key', self._key)
 
@@ -162,3 +164,16 @@ class AProvider(ABC):
                     type(HttpMethod), type(str)
                 )
             )
+
+    def fill_in_blanks(self, email):
+        if not email.from_:
+            email.from_ = self.build_from_address()
+        return email
+
+    def build_from_address(self):
+        str_addr = '{} <{}@{}>'.format(
+            self._config['human_name'],
+            self._config['from_name'],
+            self._config['domain']
+        )
+        return Recipient.from_string(str_addr, 'from')
