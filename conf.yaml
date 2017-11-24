@@ -1,6 +1,6 @@
 host: localhost
 port: 8080
-engine: gunicorn
+server: gunicorn
 workers: 4
 
 # You cam put fake value here but not email will be sent

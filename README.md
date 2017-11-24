@@ -2,12 +2,14 @@
 
 This is just a sample app done in a couple of days to showcase my python coding.
 
+EDIT: I'm actually using it in production now :)
+
 Problem, solution and design described at the end of the readme.
 
 Tech stack and libs
 -------------------
 
-- Python3: tested with 3.4 and 3.5
+- Python3: tested with 3.5, 3.6
 - [Bottle:](http://bottlepy.org/docs/dev/index.html): Straight forward, no boilerplate
 - Python packages: email-validator, requests, pyYaml, simple-crypt
 
@@ -61,24 +63,52 @@ python setup.py install
 ```
 Run:
 ```
-python -m email_api.api path/to/config.yaml
+EMAIL_API_CONFIG=path/to/config.yaml python -m email_api.api
 ```
-You must add your own sendgrid and mailgun credential in the config.yaml:
+You must add your own credentials in the config.yaml as well as your domains:
 
 ```
+host: localhost
+port: 8080
+server: gunicorn # remove for default server
+workers: 4 # remove for default server
+
+# You cam put fake value here but not email will be sent
 providers:
   sendgrid:
     user: # add your user
     key: # add your key
   mailgun:
-    user: # add user
-    key: # add key
-```
-**OR**
+    user: 'api'
+    key: # add your key
+    domain: 'foo.bar'
+    from_name: noreply
+    human_name: My App Name
+  elasticemail:
+    user: # add your user
+    key:
+    key: # add your key
+    domain: 'bar.foo'
+    from_name: noreply
+    human_name: My App Name
 
-You can run the app without specifying a config file.
-I included a default config in the code for convience, it will prompt you for a password in order to decypher the keys.
-(I can/did email you that)
+```
+
+You can configure routes based on recipients, if the regex matches the providers listed will be used instead of default order:
+The route type must be specified in the POST data when calling the API
+
+```
+routes:
+  default:
+    - elasticemail
+    - mailgun
+    - sendgrid
+  recipients:
+    - regex: '.*@((hotmail)|(outlook)|(live))\..*'
+      providers:
+        - mailgun
+        - elasticemail
+```
 
 Once the server is running you can start shooting emails:
 
@@ -86,10 +116,11 @@ Once the server is running you can start shooting emails:
 pip install httpie
 
 http post email.marech.fr/email "to=mail@mail.com"
-http post email.marech.fr/email "to=mail@mail.com" "subject=yeyeyey" "body=abc"
-http post email.marech.fr/email "to=juju <mail@mail.com>" "subject=" "body=" "cc=mail2@mail2.fr"
+http post http://localhost:8080/email "to=juju <mw@blah.fr>" "subject=Hello" "html=<a href="https://google.fr">blah</a>" "route=recipients"
+http post email.marech.fr/email "to=mail@mail.com" "subject=yeyeyey" "text=abc"
+http post email.marech.fr/email "to=juju <mail@mail.com>" "subject=" "text=" "cc=mail2@mail2.fr"
 http post email.marech.fr/email 'to:=["mail@mail.com","blah@t.com"]' 'body:=["mail@mail.com","mail2@mail2.fr"]'
-http post email.marech.fr/email "to=juju <mail@mail.com>" "subject=hello" "body=bam" "cc=blah@toto.com" "from=Hey You <hey@blah.com>" "reply_to=mail@mail.com"
+http post email.marech.fr/email "to=juju <mail@mail.com>" "subject=hello" "body=bam" "cc=blah@toto.com" "from=Hey You <hey@blah.com>" "reply*to=mail@mail.com"
 ```
 
 Note: The API is offline, contact me if you'd like it back online
