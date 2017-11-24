@@ -9,8 +9,7 @@ setup(
         'bottle>=0.12.9',
         'email-validator>=1.0.0',
         'requests>=2.9.1',
-        'PyYAML>=3.11',
-        'simple-crypt>=4.1.7'
+        'PyYAML>=3.11'
     ],
 
     package_data={

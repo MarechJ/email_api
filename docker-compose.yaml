@@ -1,0 +1,8 @@
+version: '2'
+
+services:
+  email_api:
+    build: .
+    ports:
+      - 127.0.0.1:8092:8080
+    command: bash -c "EMAIL_API_CONFIG=config.yaml python -m email_api.api"
