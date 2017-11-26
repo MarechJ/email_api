@@ -46,7 +46,6 @@ from email_api.message import (
     build_recipients
 )
 from email_api.providers_manager import ProvidersManager
-from email_api.sendgrid_provider import SendgridProvider
 from email_api.mailgun_provider import MailgunProvider
 from email_api.elasticemail_provider import ElasticEmailProvider
 from email_api.config import load_config, valid_config_or_exit, PROVIDERS_KEY
@@ -55,7 +54,6 @@ _LOG = logging.getLogger()
 
 # We could load from config
 REGISTERED_PROVIDERS = [
-    #SendgridProvider,
     MailgunProvider,
     ElasticEmailProvider
 ]

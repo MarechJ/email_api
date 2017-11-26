@@ -11,6 +11,7 @@ It should not do any IOs or fancy side effects, the
 """
 
 from enum import Enum
+import requests
 from abc import ABC, abstractproperty, abstractmethod
 from email_api.message import Recipient, Email
 
@@ -126,6 +127,10 @@ class AProvider(ABC):
                 (email_api.provider.DataFormat, dict)
 
         """
+        pass
+
+    @abstractmethod
+    def is_success(self, response: requests.Response) -> bool:
         pass
 
     def validate(self):

@@ -109,7 +109,7 @@ class ProvidersManager:
 
         return format_, mail_dict
 
-    def _prep_request(self, email, provider_klass, request_func):
+    def _prep_request(self, email, provider, request_func):
         """Prepare the request call by putting all the pieces together, and
         returns a (callable).
 
@@ -134,7 +134,6 @@ class ProvidersManager:
           InvalidProviderError
 
         """
-        provider = self._create_provider(provider_klass, self.config)
         format_, http_data = ProvidersManager._get_serialized_data(
             provider, email
         )
@@ -172,10 +171,15 @@ class ProvidersManager:
             for klass in self.provider_classes:
                 try:
                     # Prepare the request using the current provider
-                    req = self._prep_request(email, klass, sess.request)
+                    provider = self._create_provider(klass, self.config)
+                    req = self._prep_request(email, provider, sess.request)
                     response = req()
-                    response.raise_for_status()  # We only care about 2XX
-
+                    if not provider.is_success(response):
+                        _LOG.error(
+                            "Failed to send with %s moving on",
+                            klass.nickname
+                        )
+                        continue
                     # Reponse data is useless as it greatly varies
                     # from one provider to another.
                     # E.g sendgrid just replies: 'success'

@@ -55,3 +55,6 @@ class MailgunProvider(AProvider):
         mail['from'] = str(email.from_)
 
         return DataFormat.form, mail
+
+    def is_success(self, response):
+        return response.status_code == 200

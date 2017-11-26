@@ -51,3 +51,12 @@ class ElasticEmailProvider(AProvider):
         mail['bodyHtml'] = e['html']
         mail['subject'] = e['subject']
         return DataFormat.form, mail
+
+    def is_success(self, response):
+        try:
+            if response.status_code == 200 and response.json()['success']:
+                return True
+        except:
+            return False
+
+        return False
