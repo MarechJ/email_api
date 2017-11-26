@@ -1,7 +1,9 @@
 host: localhost # set to 0.0.0.0 if you run from docker
 port: 8080
 server: gunicorn
-workers: 4
+server_extra:
+    workers: 4
+    thread: 4
 
 # You cam put fake value here but not email will be sent
 providers:

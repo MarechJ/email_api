@@ -42,7 +42,7 @@ class MailgunProvider(AProvider):
         """
         e = email.to_dict()
         mail = dict(
-            **{k: e[k] for k in ['replyto', 'text', 'html', 'files']}
+            **{k: e[k] for k in ['replyto', 'text', 'html', 'files', 'subject']}
         )
         # Orgnize recipients by type (to,cc,bcc)
         # Store a list of standard email strings such as:

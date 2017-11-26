@@ -25,6 +25,9 @@ import sys
 import re
 import os
 
+import bottle
+bottle.BaseRequest.MEMFILE_MAX = 1024 * 1024
+
 from bottle import (
     route,
     run,
@@ -151,12 +154,13 @@ def start_app(argv):
     _app = default_app()
     _app.config.update(config)
 
+    extra = config.get('server_extra') or {}
     # TODO: Configure logger, WSGI server conf
     run(app=_app,
         host=config.get('host', 'localhost'),
         port=config.get('port', 8080),
         server=config.get('server', 'wsgiref'),
-        workers=config.get('workers')
+        **extra
     )
 
 
